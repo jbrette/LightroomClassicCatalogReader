@@ -1,0 +1,39 @@
+[project]
+name = "lr-reader"
+version = "0.4.0"
+description = "Extract and output image file data from Lightroom Classic databases"
+readme = "README.md"
+requires-python = ">=3.14"
+license = "MIT"
+license-files = ["LICENSE.md"]
+authors = [{ name = "Larry Pearson", email = "ThatLarryPearson@gmail.com" }]
+keywords = [
+    "Adobe Lightroom Classic", "Lightroom", "Catalog", "Database",
+    ".lrcat", "SQLite3", "Image", "File", "Reader",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = []
+
+[project.urls]
+"Source Code" = "https://github.com/thatlarrypearson/LightRoomClassicCatalogReader"
+"Bug Tracker" = "https://github.com/thatlarrypearson/LightRoomClassicCatalogReader/issues"
+
+[project.scripts]
+lr-reader = "lr_reader:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+only-include = ["lr_reader.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra"]

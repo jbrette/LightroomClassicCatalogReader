@@ -1,258 +1,137 @@
 # Lightroom Classic Catalog Image File Reader
 
-The program, ```lr_reader.py```, will extract and output image file data from Lightroom Classic databases.
+`lr_reader` lists the image and video files referenced by an Adobe Lightroom Classic catalog (`.lrcat`, a SQLite database). It provides a command-line program and a reusable Python class, `LightroomFileFinder`.
 
-The program and associated class ```LightroomFileFinder``` uses the [SQLite library](https://docs.python.org/3/library/sqlite3.html) included in most Python 3 distributions.  Normally, other than Python 3.6 and newer, no additional software would need to be installed.
+It uses only the Python standard library ([sqlite3](https://docs.python.org/3/library/sqlite3.html)) and requires Python 3.14 or newer. Catalogs are always opened read-only.
 
 ## Installation
 
-### Developer Mode Install
-
-Developers who wish to modify the code can clone from ```github``` and install with pip.  This enables changes made in the code to appear immediately as though they were happening in the library.
+The project is managed with [uv](https://docs.astral.sh/uv/).
 
 ```bash
-python3.8 -m pip install pip --upgrade
-python3.8 -m pip install setuptools --upgrade
-python3.8 -m pip install wheel --upgrade
-git clone https://github.com/thatlarrypearson/LightroomClassicCatalogReader.git
+git clone https://github.com/jbrette/LightroomClassicCatalogReader.git
 cd LightroomClassicCatalogReader
-python3.8 setup.py sdist
-python3.8 -m pip install -e .
+uv sync                   # creates .venv (Python 3.14), installs lr_reader in editable mode plus pytest
+uv run lr-reader --help   # or: uv run python -m lr_reader --help
 ```
 
-### Check Installation
+To install the `lr-reader` command globally: `uv tool install .`
 
-Launch the ```python``` interpreter ```python3.8``.`
+## Development
 
-```python
-from lr_reader import LightroomFileFinder
+```bash
+uv run pytest                                               # all tests
+uv run pytest tests/test_lr_reader.py::test_cli_full_output # a single test
+uv build                                                    # sdist and wheel into dist/
 ```
 
-An alternative to the above approach is to simply run the program as shown below.
+The tests build a small synthetic catalog in a temporary directory, so no real Lightroom catalog is needed.
 
-```PowerShell
-python3.8 -m lr_reader --help
-```
+## Command-Line Usage
 
-If this doesn't error out then you are installed!
-
-## Lightroom Classic Catalog Image File Reader Program
-
-### USAGE
-
-```PowerShell
-PS Lightroom\src> python3.8 -m lr_reader --help
-usage: lr_reader.py [-h] [--full] [-v] path
+```text
+$ uv run lr-reader --help
+usage: lr-reader [-h] [--full] [-v] path
 
 Lightroom Reader - Search for image files in Lightroom SQLite DB and output records with useful info.
 
 positional arguments:
   path           Relative or absolute path to a Lightroom SQLite database.
 
-optional arguments:
+options:
   -h, --help     show this help message and exit
   --full         Print full record, default is partial record printing
   -v, --verbose  Enable verbose mode
-PS Lightroom\src>
 ```
 
-### OUTPUT
+Verbose diagnostics are written to stderr, so stdout stays clean for piping.
 
-Program output is either a python dictionary coverted to text or a file name including relative path.  Below are samples of output.
+### Output
 
-#### Sample Partial Output Lines (```--full``` was not specified)
-
-> Windows 10 Users may notice that ```lr_reader.py``` output uses ```/``` instead of ```\``` for directory path separators.  That is because Lightroom uses the Unix/Linux/Mac directory path separator convention ```/```.
+By default each line is `root_name/folder_path_from_root/file_original_name`. Lightroom stores paths with `/` separators on every platform, including Windows.
 
 ```text
 2019/2019-12-29/20191229-2019-12-29 08.20.46.png
 2019/2019-12-29/20191229-2019-12-29 08.35.47.png
-2019/2019-12-29/20191229-2019-12-29 08.36.06.png
-2019/2019-12-29/20191229-2019-12-29 18.54.43.png
-2019/2019-12-29/20191229-2019-12-29 18.54.57.png
 2019/2019-12-31/20191231-2019-12-31 12.22.03.png
 ```
 
-#### Sample Full Output Line (```--full``` was specified)
+With `--full`, each line is the full record as a Python dictionary:
 
 ```text
-{'root_id': 53016, 'folder_id': 53019, 'file_id': 53102, 'root_absolute_path': 'C:/Users/human/Pictures/2010/', 'root_name': '2010', 'root_rel_path_from_catalog': '../2010/', 'folder_path_from_root': '2010-05-04/', 'file_base_name': '20100504-IMG_7360', 'file_extension': 'CR2', 'file_original_name': '20100504-IMG_7360.CR2'}
+{'root_name': '2010', 'folder_path_from_root': '2010-05-04/', 'file_original_name': '20100504-IMG_7360.CR2', 'root_absolute_path': 'C:/Users/human/Pictures/2010/', 'root_rel_path_from_catalog': '../2010/', 'file_base_name': '20100504-IMG_7360', 'file_extension': 'CR2', 'root_id': 53016, 'folder_id': 53019, 'file_id': 53102}
 ```
 
-#### Fields
+Records are sorted by root name, folder path and original file name.
 
-* ```root_name``` is often something like ```2019``` but can be different if the Lightroom owner has chosen a different way of cataloging photos/videos.
+### Fields
 
-* ```folder_path_from_root``` is the directory or directories between the image/video file and the root folder.  Using ```C:\Users\human\Pictures\2019\2019-12-31\20191231-2019-12-31 12.22.03.png``` as an example, the folder path from root is the portion ```2019-12-31\``` because the root name is ```2019``` and the absolute root path is ```C:\Users\human\Pictures\2019```.
+| Field | Meaning |
+| --- | --- |
+| `root_name` | Name of the Lightroom root folder, often a year such as `2019`, depending on how the catalog is organized. |
+| `folder_path_from_root` | Directories between the root folder and the file, ending in `/`. For `C:/Users/human/Pictures/2019/2019-12-31/photo.png` with root `2019`, this is `2019-12-31/`. |
+| `file_original_name` | File name assigned by Lightroom Classic at import. |
+| `root_absolute_path` | Absolute path of the root folder on the host, e.g. `C:/Users/human/Pictures/2019/`. |
+| `root_rel_path_from_catalog` | Path of the root folder relative to the catalog file, e.g. `../2019/` when catalogs live in `Pictures/Lightroom`. For files moved to another drive this can look like `../../../../F:/`. |
+| `file_base_name` | File name without extension. Usually similar to, but not the same as, the name the camera produced. |
+| `file_extension` | Image or video extension, e.g. `jpg`, `png`, `CR2`, `MOV`. |
+| `root_id`, `folder_id`, `file_id` | Primary keys of the rows in the three tables that produced the record. |
 
-* ```root_absolute_path``` is the full path of the root Lightroom Classic folder on the host system.  E.g. on Windows 10, it might be something like ```C:\Users\human\Pictures\2019``` for photos/videos taken in 2019.
+### Combining Multiple Catalogs
 
-* ```file_original_name``` is the original file name assigned by Lightroom Classic when the image/video was first imported.
+Work on copies of the `.lrcat` files. The following lists every file across several catalogs, strips drive prefixes, and removes duplicates:
 
-* ```root_rel_path_from_catalog``` on my system is usually something like ```..\2019``` assuming the photo was taken in 2019.  This is because the ```folder``` is in ```C:\Users\human\Pictures``` and the catalogs are in ```C:\Users\human\Pictures\Lightroom```.  This changes when images/movies have been migrated to another drive (E.g. F:\) attached to the system.  When Lightroom Classic users store some portion of their catalog on external USB drives, this value will reflect the relative directory path all the way to the folder containing pictures on that drive.  Something like ```..\..\..\..\F:\```.  These are Windows 10 examples.  On an Apple Mac system, ```\```'s become ```/```'s and the drives won't have letters.
+```bash
+for db in Lightroom*.lrcat; do
+  uv run lr-reader "${db}"
+done | sed -e 's/F:\/Pictures\///g' -e 's/F:\///g' | sort -u | tee image-files.txt
+```
 
-* ```file_base_name``` is the file name given image and video files on import into Lightroom Classic.  These are generally not the exact same file name of the image/movie as it came out of the camera but they will be similar.
+## Python API
 
-* ```file_extension``` will be a file extension associated with either an image or movie file.  E.e. ```.jpg```, ```.gif```, ```.png```, ```.CR2``` and ```.MOV```.
+### `LightroomFileFinder(path, verbose=False)`
 
-* ```root_id```, ```folder_id``` and ```file_id``` are the primary key values uniquely identifying the specific row in each of the three database tables used to compile this line of output.
+An iterator yielding one dictionary per file, with the fields listed above.
 
-## Lightroom Classic Catalog Image File Reader Class
+- `path` (`str` or `pathlib.Path`): relative or absolute path to the catalog, e.g. `Lightroom Catalog-2.lrcat` or `C:\Users\human\Pictures\Lightroom\Lightroom Catalog-2.lrcat`. Spaces and special characters in the name are handled.
+- `verbose`: when `True`, underlying error details are printed to stderr.
 
-### ```LightroomFileFinder(path, verbose=False)```
-
-The ```LightroomFileFinder``` class implements an iterator (used in ```for``` loops) returning a dictionary representing a image file information found in the database.  See programing example below.
-
-* ```path``` can be relative or absolute and includes the database file name.  E.g. ```Lightroom 5 Catalog.lrcat```, ```C:\Users\human\Pictures\Lightroom\Lightroom Catalog-2.lrcat``` and ```..\..\Pictures\Lightroom\Lightroom Catalog.lrcat```.
-
-  > When working in Python on Windows systems, don't forget to escape the ```\``` character.  E.g. ```C:\\Users\\human\\Pictures\\Lightroom\\Lightroom Catalog-2.lrcat```.
-
-* ```verbose``` defaults to False.  When set to True, additional error information is provided that may better show underlying failer causes.
-
-### Error Handling
-
-#### Specified Lightroom Classic Catalog File Doesn't Exist
-
-* ```ValueError``` Exception.
-
-#### Required Tables Missing From Lightroom Classic Catalog File
-
-* ```RuntimeError``` Exception.
-
-#### Database Files Locked By Running Lightroom Classic Program
-
-> NOTE:
-> Before mucking around with Lightroom Classic ```.lrcat``` files, make copies of the files and then work from the copies.
-
-* ```ValueError``` Exception.
-
-#### Unknown Error When Reading Records From Database
-
-* ```RuntimeError``` Exception.
-
-### Python 3 Programming Example
+The database connection opens when iteration starts and closes when it ends. Use the object as a context manager to also close it when stopping early. Iterating again reopens the catalog.
 
 ```python
 from lr_reader import LightroomFileFinder
 
-lightroom_reader = LightroomFileFinder('Pictures\\Lightroom\\Lightroom 5 Catalog.lrcat')
-
-for record in lightroom_reader():
-  print(record)
+with LightroomFileFinder("Pictures/Lightroom/Lightroom 5 Catalog.lrcat") as catalog:
+    for record in catalog:
+        print(record)
 ```
 
-## Exploring Lightroom Classic SQLite Schema With Command Line Tools
+### Errors
 
-SQLite command line tools are available from [SQLite](https://sqlite.org).  These tools were used to identify database table structure for data related to image files.
+| Situation | Exception |
+| --- | --- |
+| Catalog file missing, unreadable or locked at open | `ValueError` |
+| Required tables missing (not a Lightroom catalog) | `RuntimeError` |
+| Error while reading rows | `RuntimeError` |
 
-> NOTE:
-> Before mucking around with Lightroom Classic ```.lrcat``` files, make copies of the files and then work from the copies.
+The original `sqlite3.Error` is available as the exception's `__cause__`. A catalog that is open in a running Lightroom Classic may be locked; work on a copy.
 
-```bash
-SQLite3 Command Line Tools
-$ sqlite3
-SQLite version 3.31.1 2020-01-27 19:55:54
-Enter ".help" for usage hints.
-Connected to a transient in-memory database.
-Use ".open FILENAME" to reopen a persistent database.
-sqlite> .shell dir
- Volume in drive L is WD-931GB
- Volume Serial Number is 46EE-388C
+## Catalog Schema
 
- Directory of L:\Lightroom\catalogs
+The program reads three tables. The full schema can be inspected with the [SQLite command-line shell](https://sqlite.org/cli.html), preferably on a copy of the catalog:
 
-05/03/2020  10:06 AM    <DIR>          .
-05/03/2020  10:06 AM    <DIR>          ..
-12/22/2019  09:01 PM        16,502,784 Lightroom Catalog-4.lrcat
-12/22/2019  08:59 PM        25,022,464 Lightroom 5 Catalog.lrcat
-11/01/2019  08:14 PM       726,310,912 Lightroom Catalog.lrcat
-05/02/2020  02:06 PM       755,748,864 Lightroom Catalog-2.lrcat
-12/22/2019  08:58 PM       736,919,552 Lightroom Catalog-3.lrcat
-               5 File(s)  2,260,504,576 bytes
-               2 Dir(s)  997,888,884,736 bytes free
-sqlite> .open 'Lightroom Catalog-2.lrcat'
-sqlite> .databases
-main: L:\Lightroom\catalogs\Lightroom Catalog-2.lrcat
-sqlite> .schema main.* --indent
-CREATE TABLE Adobe_variablesTable(
-  id_local INTEGER PRIMARY KEY,
-  id_global UNIQUE NOT NULL,
-  name,
-  type,
-  value NOT NULL DEFAULT ''
-);
-CREATE TABLE Adobe_variables(
-  id_local INTEGER PRIMARY KEY,
-  id_global UNIQUE NOT NULL,
-  name,
-  value
-);
-
-. . .
-. . .
-. . .
-
-
-/* fsdir(name,mode,mtime,data) */;
-/* fts3tokenize(input,token,start,"end",position) */;
-/* json_each("key",value,type,atom,id,parent,fullkey,path) */;
-/* json_tree("key",value,type,atom,id,parent,fullkey,path) */;
-/* pragma_database_list(seq,name,file) */;
-/* pragma_module_list(name) */;
-/* sqlite_dbdata(pgno,cell,field,value) */;
-/* sqlite_dbpage(pgno,data) */;
-/* sqlite_dbptr(pgno,child) */;
-/* sqlite_stmt(sql,ncol,ro,busy,nscan,nsort,naidx,nstep,reprep,run,mem) */;
-/* zipfile(name,mode,mtime,sz,rawdata,data,method) */;
-sqlite>
-sqlite> .once '..\\lrcat-2.schema'
-sqlite> .schema main.* --indent
-sqlite>
-```
-
-> NOTE: On Windows 10, the following ```.shell dir ..``` caused BitDefender antivirus software to freakout and kill ```sqlite3``` command and all of its helping tools.  Turning off the antivirus software was a temporary solution.
-
-```bash
-sqlite> .shell dir ..
- Volume in drive L is WD-931GB
- Volume Serial Number is 46EE-388C
-
- Directory of L:\Lightroom
-
-05/03/2020  10:06 AM    <DIR>          .
-05/03/2020  10:06 AM    <DIR>          ..
-05/03/2020  10:06 AM    <DIR>          catalogs
-05/03/2020  11:06 AM            52,679 lrcat-2.schema
-               1 File(s)         52,679 bytes
-               3 Dir(s)  997,887,836,160 bytes free
-sqlite> sqlite> .once '..\\lrcat-2.dump'
-sqlite> .dump
-sqlite> .shell dir ..
- Volume in drive L is WD-931GB
- Volume Serial Number is 46EE-388C
-
- Directory of L:\Lightroom
-
-05/03/2020  10:06 AM    <DIR>          .
-05/03/2020  10:06 AM    <DIR>          ..
-05/03/2020  10:06 AM    <DIR>          catalogs
-05/03/2020  11:06 AM            52,679 lrcat-2.schema
-05/03/2020  11:20 AM       872,552,457 lrcat-2.dump
-               2 File(s)    872,605,136 bytes
-               3 Dir(s)  997,013,323,776 bytes free
-
+```text
+$ sqlite3 'Lightroom Catalog-2.lrcat'
+sqlite> .schema --indent
+sqlite> .once lrcat-2.schema
+sqlite> .schema --indent
 sqlite> .excel
-sqlite> SELECT * FROM agLibraryFile;
-sqlite> .excel
-sqlite> SELECT * FROM agLibraryFolder;
-sqlite>
-sqlite> .quit
-$
+sqlite> SELECT * FROM AgLibraryFile;
 ```
 
-## Table Definitions For Tables Used In This Software
+On Windows 10, `.shell dir` from inside `sqlite3` was observed to trigger BitDefender, which killed the shell.
 
-```SQL
+```sql
 CREATE TABLE AgLibraryRootFolder(
   id_local INTEGER PRIMARY KEY,
   id_global UNIQUE NOT NULL,
@@ -288,9 +167,9 @@ CREATE TABLE AgLibraryFile(
 );
 ```
 
-## Join Statement For Getting Files
+The query used by `lr_reader`:
 
-```SQL
+```sql
 SELECT
   root.name AS root_name,
   folder.pathFromRoot AS folder_path_from_root,
@@ -308,23 +187,6 @@ JOIN AgLibraryFile file ON folder.id_local = file.folder
 ORDER BY root.name, folder.pathFromRoot, file.originalFilename;
 ```
 
-## Example Linux/Mac Shell Commands To Find All Image File Names Contained in Multiple Lightroom Classic Catalogs
+## License
 
-```bash
-#!/bin/bash
-
-for db in Lightroom*.lrcat
-do
-  python3.8 lr_reader.py --verbose "${db}"
-done | sed 's/F:\/Pictures\///g' | sed 's/F:\///g' | sort -u | tee image-files.txt
-```
-
-After copying each of the Lightroom Classic ```.lrcat``` catalog files in ```C:\Users\human\Pictures\Lightroom``` to another directory, the above Linux shell commands were run against the catalog file copies.  The goal was to clean up the data and remove duplicate file names from the combined output of multiple Lightroom catalog files.
-
-The script logic goes something like this:
-
-* For each of the Lightroom catalog database files run the ```lr_reader.py``` program on the current catalog file.
-* Take all of the output from each ```lr_reader.py``` run and remove every instance of the string ```F:\Picture\``` from the output.
-* Taking the output from the first ```sed``` command, have the second ```sed``` command remove every instance of the string ```F:\``` from the output.
-* Takeing the output from the second ```sed``` command, sort all of the file names and remove any duplicate entries so that each file name in the output is unique.
-* Finally, send the output from the ```sort``` command to both the screen and the file ```image-files.txt```.
+MIT; see [LICENSE.md](LICENSE.md). Originally written by Larry Pearson ([thatlarrypearson/LightroomClassicCatalogReader](https://github.com/thatlarrypearson/LightroomClassicCatalogReader)).
