@@ -17,6 +17,16 @@ uv run lr-reader --help   # or: uv run python -m lr_reader --help
 
 To install the `lr-reader` command globally: `uv tool install .`
 
+### Versions
+
+Releases use calendar versioning, `YY.MM.DD`, tagged `vYY.MM.DD`. The current release is **26.11.13**. The version is defined once, as `lr_reader.__version__`, and is printed by `lr-reader --version`.
+
+To depend on a release from another uv project:
+
+```bash
+uv add "lr-reader @ git+https://github.com/jbrette/LightroomClassicCatalogReader.git@v26.11.13"
+```
+
 ## Development
 
 ```bash
@@ -31,7 +41,7 @@ The tests build a small synthetic catalog in a temporary directory, so no real L
 
 ```text
 $ uv run lr-reader --help
-usage: lr-reader [-h] [--full] [-v] path
+usage: lr-reader [-h] [--full] [-v] [-V] path
 
 Lightroom Reader - Search for image files in Lightroom SQLite DB and output records with useful info.
 
@@ -42,6 +52,7 @@ options:
   -h, --help     show this help message and exit
   --full         Print full record, default is partial record printing
   -v, --verbose  Enable verbose mode
+  -V, --version  show program's version number and exit
 ```
 
 Verbose diagnostics are written to stderr, so stdout stays clean for piping.

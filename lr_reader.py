@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, ClassVar, Self, cast, override
 if TYPE_CHECKING:
     from types import TracebackType
 
+__version__ = "26.11.13"
+
 type SQLValue = str | int | float | bytes | None
 type Record = dict[str, SQLValue]
 
@@ -181,6 +183,7 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
     )
     parser.add_argument("-v", "--verbose", help="Enable verbose mode", action="store_true")
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s {__version__}")
     args = parser.parse_args(argv, namespace=Arguments())
 
     if args.verbose:

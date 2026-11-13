@@ -13,6 +13,7 @@ from lr_reader import (
     CatalogOpenError,
     CatalogSchemaError,
     LightroomFileFinder,
+    __version__,
     format_record,
     main,
     path_to_uri,
@@ -154,6 +155,14 @@ def test_cli_verbose_keeps_stdout_clean(catalog: Path, capsys: pytest.CaptureFix
     captured = capsys.readouterr()
     assert captured.out.splitlines() == EXPECTED_LINES
     assert "path:" in captured.err
+
+
+def test_cli_version(capsys: pytest.CaptureFixture[str]) -> None:
+    """--version prints the program name and version, then exits 0."""
+    with pytest.raises(SystemExit) as exc:
+        main(["--version"])
+    assert exc.value.code == 0
+    assert capsys.readouterr().out.strip().endswith(f" {__version__}")
 
 
 def test_cli_requires_path() -> None:

@@ -6,7 +6,7 @@ Provide the `lr-reader` command, which prints the files referenced by a Lightroo
 ## Requirements
 
 ### Requirement: Command invocation
-The `lr-reader` console script (`lr_reader:main`) SHALL take one positional `path` to a catalog and the optional flags `--full` and `-v`/`--verbose`. `main(argv=None)` SHALL accept an argument list, defaulting to `sys.argv[1:]`, and return the process exit code.
+The `lr-reader` console script (`lr_reader:main`) SHALL take one positional `path` to a catalog and the optional flags `--full`, `-v`/`--verbose` and `-V`/`--version`. `main(argv=None)` SHALL accept an argument list, defaulting to `sys.argv[1:]`, and return the process exit code.
 
 #### Scenario: Successful run
 - **WHEN** `lr-reader` runs on a readable catalog
@@ -36,6 +36,13 @@ With `-v`/`--verbose`, the command SHALL print its parsed `path`, `full` and `ve
 #### Scenario: Verbose run
 - **WHEN** `lr-reader -v` runs on the catalog
 - **THEN** stdout equals the default output and stderr contains `path:`
+
+### Requirement: Version flag
+`-V`/`--version` SHALL print `lr-reader <version>` to stdout, where `<version>` is `lr_reader.__version__` (calendar `YY.MM.DD`), and exit with code 0.
+
+#### Scenario: Printing the version
+- **WHEN** `lr-reader --version` runs
+- **THEN** stdout is `lr-reader 26.11.13` for release 26.11.13 and the exit code is 0
 
 ### Requirement: Errors propagate
 Reader errors (`CatalogOpenError`, `CatalogSchemaError`, `CatalogFetchError`) SHALL NOT be caught by the command; they end the process with a traceback and a non-zero exit code.

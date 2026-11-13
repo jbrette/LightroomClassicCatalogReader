@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Single-module Python tool (`lr_reader.py`) that reads an Adobe Lightroom Classic catalog (`.lrcat`, a SQLite database) and lists the image/video files it references. Standard library only (`sqlite3`, `argparse`); Python >= 3.14 (uses `type` aliases and `typing.Self`). Managed with uv via `pyproject.toml` (hatchling backend, wheel contains only `lr_reader.py`); there is no CI.
+Single-module Python tool (`lr_reader.py`) that reads an Adobe Lightroom Classic catalog (`.lrcat`, a SQLite database) and lists the image/video files it references. Standard library only (`sqlite3`, `argparse`); Python >= 3.14 (uses `type` aliases and `typing.Self`). Managed with uv via `pyproject.toml` (hatchling backend, version read from `lr_reader.__version__` — calendar `YY.MM.DD`, tagged `vYY.MM.DD` — wheel contains only `lr_reader.py`); there is no CI.
 
 Lint and typing are maximally strict and every change must pass all three gates: ruff with `select = ["ALL"]` (only conflict-resolving ignores, plus `T201` in `lr_reader.py` and assert/magic-value/`INP001` in tests), mypy `strict` plus `disallow_any_expr`/`disallow_any_explicit` (every function fully annotated, no `Any` anywhere; use `cast` at the `sqlite3`/argparse boundary), and pytest with `filterwarnings = error` and 100% branch coverage. Google-style docstrings are required on all public objects, including tests. `ruff` is pinned to `0.16.3` (`required-version`).
 

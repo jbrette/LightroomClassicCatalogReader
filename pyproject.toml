@@ -1,6 +1,6 @@
 [project]
 name = "lr-reader"
-version = "0.4.0"
+dynamic = ["version"]
 description = "Extract and output image file data from Lightroom Classic databases"
 readme = "README.md"
 requires-python = ">=3.14"
@@ -36,6 +36,9 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "lr_reader.py"
 
 [tool.hatch.build.targets.wheel]
 only-include = ["lr_reader.py"]
