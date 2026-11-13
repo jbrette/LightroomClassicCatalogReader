@@ -89,12 +89,12 @@ done | sed -e 's/F:\/Pictures\///g' -e 's/F:\///g' | sort -u | tee image-files.t
 
 ## Python API
 
-### `LightroomFileFinder(path, verbose=False)`
+### `LightroomFileFinder(path, *, verbose=False)`
 
 An iterator yielding one dictionary per file, with the fields listed above.
 
 - `path` (`str` or `pathlib.Path`): relative or absolute path to the catalog, e.g. `Lightroom Catalog-2.lrcat` or `C:\Users\human\Pictures\Lightroom\Lightroom Catalog-2.lrcat`. Spaces and special characters in the name are handled.
-- `verbose`: when `True`, underlying error details are printed to stderr.
+- `verbose` (keyword-only): when `True`, underlying error details are printed to stderr.
 
 The database connection opens when iteration starts and closes when it ends. Use the object as a context manager to also close it when stopping early. Iterating again reopens the catalog.
 
@@ -108,11 +108,11 @@ with LightroomFileFinder("Pictures/Lightroom/Lightroom 5 Catalog.lrcat") as cata
 
 ### Errors
 
-| Situation | Exception |
-| --- | --- |
-| Catalog file missing, unreadable or locked at open | `ValueError` |
-| Required tables missing (not a Lightroom catalog) | `RuntimeError` |
-| Error while reading rows | `RuntimeError` |
+| Situation | Exception | Subclass of |
+| --- | --- | --- |
+| Catalog file missing, unreadable or locked at open | `CatalogOpenError` | `ValueError` |
+| Required tables missing (not a Lightroom catalog) | `CatalogSchemaError` | `CatalogQueryError` → `RuntimeError` |
+| Error while reading rows | `CatalogFetchError` | `CatalogQueryError` → `RuntimeError` |
 
 The original `sqlite3.Error` is available as the exception's `__cause__`. A catalog that is open in a running Lightroom Classic may be locked; work on a copy.
 
