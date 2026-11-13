@@ -1,0 +1,31 @@
+# Keep the ruff rev in step with the ruff pin in pyproject.toml.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-toml
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.3
+    hooks:
+      - id: ruff-check
+      - id: ruff-format
+        args: [--check]
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (strict)
+        entry: uv run mypy
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: pytest
+        name: pytest (100% coverage)
+        entry: uv run pytest -q
+        language: system
+        types: [python]
+        pass_filenames: false
