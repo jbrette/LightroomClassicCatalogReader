@@ -1,0 +1,38 @@
+schema: spec-driven
+
+context: |
+  Single-module Python 3.14 tool (lr_reader.py), standard library only, managed with uv.
+  Reads Adobe Lightroom Classic catalogs (.lrcat SQLite) read-only; never writes to a catalog.
+  Gates: ruff select=ALL, mypy strict with no Any, pytest with warnings as errors and 100% branch
+  coverage, all run by pre-commit. Record dict keys and the CLI output format are public contracts.
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
