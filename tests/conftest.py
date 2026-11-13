@@ -1,7 +1,14 @@
+# Copyright (c) 2020 Larry Pearson
+# SPDX-License-Identifier: MIT
+"""Synthetic Lightroom catalog fixture for the test suite."""
+
 import sqlite3
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # Subset of the Lightroom Classic schema used by lr_reader (see README.md).
 SCHEMA = """
@@ -58,11 +65,13 @@ EXPECTED_LINES = [
 
 
 def build_catalog(path: Path) -> Path:
+    """Create the synthetic catalog at ``path`` and return it."""
     with sqlite3.connect(path) as db:
         db.executescript(SCHEMA)
         db.executemany("INSERT INTO AgLibraryRootFolder VALUES (?, ?, ?, ?, ?)", ROOTS)
         db.executemany(
-            "INSERT INTO AgLibraryFolder (id_local, id_global, pathFromRoot, rootFolder) VALUES (?, ?, ?, ?)",
+            "INSERT INTO AgLibraryFolder (id_local, id_global, pathFromRoot, rootFolder)"
+            " VALUES (?, ?, ?, ?)",
             FOLDERS,
         )
         db.executemany("INSERT INTO AgLibraryFile VALUES (?, ?, ?, ?, ?, ?)", FILES)
@@ -70,7 +79,8 @@ def build_catalog(path: Path) -> Path:
     return path
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]  # pytest.fixture is typed with Any overloads
 def catalog(tmp_path: Path) -> Path:
+    """Return a synthetic catalog whose name needs URI encoding."""
     # Space and '#' in the name exercise URI encoding of the path.
     return build_catalog(tmp_path / "Lightroom Catalog #1.lrcat")
